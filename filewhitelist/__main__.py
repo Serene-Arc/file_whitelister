@@ -21,7 +21,7 @@ def load_whitelist(file_location: pathlib.Path) -> list[str]:
 
 
 def _create_parser_options():
-    parser.add_argument('file', help='text file with list of files')
+    parser.add_argument('whitelist', help='text file with list of files')
     parser.add_argument('directory', help='directory to scan')
     parser.add_argument('-l', '--levenshtein', nargs='?', type=int, const=1, default=None)
     parser.add_argument('-v', '--verbose', action='count', default=0)
@@ -38,7 +38,7 @@ def _setup_logging(stdout_enabled: bool, verbosity: int):
         logger_level = logging.INFO
     else:
         logger_level = logging.DEBUG
-    if stdout_enabled:
+    if not stdout_enabled:
         stream = logging.StreamHandler(sys.stdout)
         stream.setFormatter(formatter)
         stream.setLevel(logger_level)
@@ -68,36 +68,38 @@ def search_directory(directory: pathlib.Path, white_list: list[str], levenshtein
     return found_files
 
 
-def main():
-    _create_parser_options()
-    args = parser.parse_args()
+def write_results(output_file: pathlib.Path, file_list):
+    with open(output_file, 'w') as result_file:
+        for ff in file_list:
+            result_file.write(ff.name + '\n')
 
+
+def main(args: argparse.Namespace):
     _setup_logging(args.stdout, args.verbosity)
 
     args.output = pathlib.Path(args.output).resolve()
-    args.file = pathlib.Path(args.file).resolve()
+    args.whitelist = pathlib.Path(args.whitelist).resolve()
     args.directory = pathlib.Path(args.directory).resolve()
 
-    if not args.file.is_file():
+    if not args.whitelist.is_file():
         raise Exception('file argument must be a file')
     if not args.directory.is_dir():
         raise Exception('directory argument must be a directory')
 
-    white_list = load_whitelist(args.file)
+    white_list = load_whitelist(args.whitelist)
     logger.info('Whitelist file loaded')
 
     found_files = search_directory(args.directory, white_list, args.levenshtein)
     logger.info('{} files not in whitelist found'.format(len(found_files)))
 
     logger.info('Writing to output')
-    write_results(args.output, found_files)
-
-
-def write_results(output_file: pathlib.Path, file_list):
-    with open(output_file, 'r') as result_file:
-        for ff in file_list:
-            result_file.write(ff.name + '\n')
+    if args.stdout is False:
+        write_results(args.output, found_files)
+    else:
+        for result in found_files:
+            print(result.name)
 
 
 if __name__ == "__main__":
-    main()
+    _create_parser_options()
+    main(parser.parse_args())
