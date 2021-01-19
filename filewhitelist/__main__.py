@@ -24,7 +24,7 @@ def _create_parser_options():
     parser.add_argument('whitelist', help='text file with list of files')
     parser.add_argument('directory', help='directory to scan')
     parser.add_argument('-l', '--levenshtein', nargs='?', type=int, const=1, default=None)
-    parser.add_argument('-v', '--verbose', action='count', default=0)
+    parser.add_argument('-v', '--verbosity', action='count', default=0)
 
     output_group = parser.add_mutually_exclusive_group()
     output_group.add_argument('-o', '--output', type=str, default='results.txt')
